@@ -86,4 +86,11 @@ export const en = {
       return: "Return",
     },
   },
+  notificationsPage: {
+    title: "Notifications",
+    subtitle: "Updates and alerts sent to your account.",
+    markAllRead: "Mark all as read",
+    markRead: "Mark as read",
+    empty: "No notifications yet.",
+  },
 };

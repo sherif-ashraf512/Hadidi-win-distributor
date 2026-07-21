@@ -86,4 +86,11 @@ export const ar = {
       return: "مرتجع",
     },
   },
+  notificationsPage: {
+    title: "الإشعارات",
+    subtitle: "التحديثات والتنبيهات المرسلة لحسابك.",
+    markAllRead: "تحديد الكل كمقروء",
+    markRead: "تحديد كمقروء",
+    empty: "لا توجد إشعارات بعد.",
+  },
 };

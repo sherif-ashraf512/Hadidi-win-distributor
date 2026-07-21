@@ -11,11 +11,12 @@ import { useLocale } from "@/hooks/use-locale";
 import { BrandLogoFull, BrandLogoMark } from "@/components/brand/brand-media";
 
 /**
- * Just two items today (Stock, Movements) — this portal has exactly one
- * role, so unlike the staff dashboard's desktop-nav-access.js there's no
+ * Two items today (Stock, Movements) — this portal has exactly one role, so
+ * unlike the staff dashboard's desktop-nav-access.js there's no
  * role/permission filtering here. Add future distributor-portal pages by
  * appending to this array; everything else (collapse, mobile drawer, active
- * highlighting) is already generic.
+ * highlighting) is already generic. Notifications lives in the navbar bell
+ * (NotificationPopover), not here — it doesn't need a permanent nav slot.
  */
 const NAV_ITEMS = [
   { href: "/", labelKey: "portal.navStock", icon: Package },
