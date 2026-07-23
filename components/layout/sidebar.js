@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeftRight, ChevronsLeft, ChevronsRight, LogOut, Package, UserRound, X } from "lucide-react";
+import { ArrowLeftRight, ChevronsLeft, ChevronsRight, ClipboardList, LogOut, Package, UserRound, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { clearToken } from "@/lib/auth";
@@ -11,16 +11,17 @@ import { useLocale } from "@/hooks/use-locale";
 import { BrandLogoFull, BrandLogoMark } from "@/components/brand/brand-media";
 
 /**
- * Two items today (Stock, Movements) — this portal has exactly one role, so
- * unlike the staff dashboard's desktop-nav-access.js there's no
- * role/permission filtering here. Add future distributor-portal pages by
- * appending to this array; everything else (collapse, mobile drawer, active
- * highlighting) is already generic. Notifications lives in the navbar bell
- * (NotificationPopover), not here — it doesn't need a permanent nav slot.
+ * This portal has exactly one role, so unlike the staff dashboard's
+ * desktop-nav-access.js there's no role/permission filtering here. Add
+ * future distributor-portal pages by appending to this array; everything
+ * else (collapse, mobile drawer, active highlighting) is already generic.
+ * Notifications lives in the navbar bell (NotificationPopover), not here —
+ * it doesn't need a permanent nav slot.
  */
 const NAV_ITEMS = [
   { href: "/", labelKey: "portal.navStock", icon: Package },
   { href: "/movements", labelKey: "portal.navMovements", icon: ArrowLeftRight },
+  { href: "/requests", labelKey: "portal.navRequests", icon: ClipboardList },
 ];
 
 export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobile }) {

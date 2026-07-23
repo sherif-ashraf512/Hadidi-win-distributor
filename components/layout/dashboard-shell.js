@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNavbar } from "@/components/layout/top-navbar";
 import { useLocale } from "@/hooks/use-locale";
+import { useAuthUser } from "@/hooks/use-auth-user";
+import Image from "next/image";
 
 const COLLAPSE_KEY = "hadidi_distributor_sidebar_collapsed";
 const COLLAPSE_EVENT = "hadidi-distributor:sidebar-collapsed-changed";
@@ -30,6 +32,8 @@ function subscribeCollapsed(onStoreChange) {
 
 export function DashboardShell({ children }) {
   const { t } = useLocale();
+  const { data: user } = useAuthUser();
+  const isInactive = user?.warehouse?.is_active === false;
   const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsedFromStorage, () => false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -77,7 +81,53 @@ export function DashboardShell({ children }) {
         ].join(" ")}
       >
         <TopNavbar onOpenSidebar={() => setMobileOpen(true)} />
-        <main className="hide-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
+        <main className="hide-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          {isInactive ? (
+            <div className="relative flex min-h-full flex-col items-center justify-center p-4 py-8 md:py-12">
+              {/* Background glowing blobs */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-30 blur-[100px] pointer-events-none">
+                <div className="h-64 w-64 rounded-full bg-red-400"></div>
+                <div className="h-64 w-64 -ms-20 rounded-full bg-orange-300"></div>
+              </div>
+
+              <div className="relative z-10 flex w-full max-w-xl shrink-0 flex-col items-center rounded-[2.5rem] bg-white p-8 sm:p-12 md:p-14 text-center shadow-[0_8px_40px_rgb(0,0,0,0.06)] overflow-hidden transition-all duration-500 hover:shadow-[0_20px_60px_rgb(0,0,0,0.08)] ring-1 ring-black/[0.03]">
+                {/* Subtle top gradient line */}
+                <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-red-500 via-orange-400 to-red-500 opacity-90"></div>
+                
+                {/* Image Container */}
+                <div className="relative mb-8 aspect-square w-56 md:w-72 transition-transform hover:scale-110 hover:-rotate-2 duration-700 ease-out">
+                  <Image 
+                    src="/inactive-warehouse.png" 
+                    alt={t("portal.inactiveTitle")} 
+                    fill 
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+
+                {/* Text content */}
+                <div className="flex flex-col items-center max-w-md">
+                  <div className="mb-5 inline-flex items-center justify-center rounded-full bg-red-50 px-3.5 py-1.5 text-sm font-bold text-red-600 shadow-sm border border-red-100">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    <span className="ms-2.5 tracking-wide">{t("portal.inactive")}</span>
+                  </div>
+                  
+                  <h2 className="mb-3 text-3xl font-black tracking-tight text-hadidi-primary md:text-4xl">
+                    {t("portal.inactiveTitle")}
+                  </h2>
+                  <p className="text-base font-medium leading-relaxed text-hadidi-subtle md:text-lg">
+                    {t("portal.inactiveDesc")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );
