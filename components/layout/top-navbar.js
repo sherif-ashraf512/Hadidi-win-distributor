@@ -3,12 +3,15 @@
 import { Menu, Warehouse } from "lucide-react";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useLocale } from "@/hooks/use-locale";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { warehouseLabel } from "@/lib/format";
 import { NotificationPopover } from "@/components/layout/notification-popover";
 
 export function TopNavbar({ onOpenSidebar }) {
   const { t, locale, setLocale } = useLocale();
   const { data: user } = useAuthUser();
+
+  usePushNotifications();
 
   return (
     <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-white/90 backdrop-blur-md">
