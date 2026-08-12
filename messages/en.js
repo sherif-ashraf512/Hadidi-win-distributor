@@ -133,6 +133,7 @@ export const en = {
     fieldItem: "Item",
     fieldQuantity: "Quantity",
     fieldUnitPrice: "Price per unit",
+    fieldDiscountPercent: "Discount %",
     sellingPriceHint: "Price",
     noSellingPrice: "This item has no selling price set — contact Hadidi Win.",
     selectItemPlaceholder: "Select an item",

@@ -28,6 +28,7 @@ export function RequestForm() {
   const [lines, setLines] = useState([]);
   const [formItemId, setFormItemId] = useState(ITEM_NONE);
   const [formQty, setFormQty] = useState("");
+  const [formDiscount, setFormDiscount] = useState("");
   const [error, setError] = useState("");
 
   // "purchase" — pick from the full catalog (a brand-new distributor's own
@@ -90,9 +91,13 @@ export function RequestForm() {
       return;
     }
     setError("");
-    setLines((prev) => [...prev, { inventory_item_id: formItemId, quantity: formQty, unit_price: pickedSellingPrice }]);
+    setLines((prev) => [
+      ...prev,
+      { inventory_item_id: formItemId, quantity: formQty, unit_price: pickedSellingPrice, discount_percent: formDiscount },
+    ]);
     setFormItemId(ITEM_NONE);
     setFormQty("");
+    setFormDiscount("");
   }
 
   function removeLine(idx) {
@@ -108,6 +113,7 @@ export function RequestForm() {
           inventory_item_id: Number(row.inventory_item_id),
           quantity: Number(row.quantity),
           unit_price: Number(row.unit_price),
+          discount_percent: row.discount_percent ? Number(row.discount_percent) : 0,
         })),
       };
       const { data } = await api.post("/distributor/requests", payload);
@@ -136,7 +142,13 @@ export function RequestForm() {
   const isDirty = lines.length > 0 || notes.trim() !== "" || (formItemId !== ITEM_NONE && formQty !== "");
   useUnsavedChangesGuard(!createMutation.isSuccess && isDirty);
 
-  const grandTotal = lines.reduce((acc, row) => acc + Number(row.quantity || 0) * Number(row.unit_price || 0), 0);
+  function lineTotal(row) {
+    const subtotal = Number(row.quantity || 0) * Number(row.unit_price || 0);
+    const discount = Number(row.discount_percent || 0);
+    return subtotal * (1 - discount / 100);
+  }
+
+  const grandTotal = lines.reduce((acc, row) => acc + lineTotal(row), 0);
 
   return (
     <div className="space-y-6">
@@ -172,7 +184,7 @@ export function RequestForm() {
             ) : pickerQuery.isError ? (
               <p className="text-sm text-red-700">{t("common.loadError")}</p>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-5 items-end">
+              <div className="grid gap-3 sm:grid-cols-6 items-end">
                 <div className="sm:col-span-2">
                   <Select
                     label={t("requestsPage.fieldItem")}
@@ -201,6 +213,15 @@ export function RequestForm() {
                     {pickedSellingPrice != null ? formatAmount(pickedSellingPrice, locale) : t("common.dash")}
                   </div>
                 </div>
+                <Input
+                  label={t("requestsPage.fieldDiscountPercent")}
+                  inputMode="decimal"
+                  value={formDiscount}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "" || /^\d*\.?\d*$/.test(v)) setFormDiscount(v);
+                  }}
+                />
                 <Button
                   type="button"
                   variant="primary"
@@ -228,6 +249,7 @@ export function RequestForm() {
                     <TableHead>{t("requestsPage.colColor")}</TableHead>
                     <TableHead className="w-24">{t("requestsPage.fieldQuantity")}</TableHead>
                     <TableHead className="w-28">{t("requestsPage.fieldUnitPrice")}</TableHead>
+                    <TableHead className="w-24">{t("requestsPage.fieldDiscountPercent")}</TableHead>
                     <TableHead className="w-28">{t("requestsPage.colTotal")}</TableHead>
                     <TableHead className="w-16" />
                   </TableRow>
@@ -251,7 +273,8 @@ export function RequestForm() {
                       <TableCell className="text-hadidi-subtle">{parts.color}</TableCell>
                       <TableCell className="font-mono text-xs">{formatQty(row.quantity)}</TableCell>
                       <TableCell>{formatAmount(row.unit_price, locale)}</TableCell>
-                      <TableCell className="font-bold">{formatAmount(Number(row.quantity) * Number(row.unit_price), locale)}</TableCell>
+                      <TableCell>{row.discount_percent ? `${formatQty(row.discount_percent)}%` : t("common.dash")}</TableCell>
+                      <TableCell className="font-bold">{formatAmount(lineTotal(row), locale)}</TableCell>
                       <TableCell>
                         <button
                           type="button"
@@ -265,7 +288,7 @@ export function RequestForm() {
                     );
                   })}
                   <TableRow className="bg-hadidi-muted/20 hover:bg-hadidi-muted/20">
-                    <TableCell colSpan={7} className="text-end font-bold text-hadidi-primary">
+                    <TableCell colSpan={8} className="text-end font-bold text-hadidi-primary">
                       {t("requestsPage.colTotal")}
                     </TableCell>
                     <TableCell className="text-lg font-bold text-hadidi-primary">{formatAmount(grandTotal, locale)}</TableCell>

@@ -133,6 +133,7 @@ export const ar = {
     fieldItem: "الصنف",
     fieldQuantity: "الكمية",
     fieldUnitPrice: "سعر الوحدة",
+    fieldDiscountPercent: "نسبة الخصم %",
     sellingPriceHint: "السعر",
     noSellingPrice: "هذا الصنف ليس له سعر بيع محدد — تواصل مع الحديدي وين.",
     selectItemPlaceholder: "اختر صنفًا",
