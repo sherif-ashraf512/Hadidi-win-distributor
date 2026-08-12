@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAuthUser } from "@/hooks/use-auth-user";
 import { useLocale } from "@/hooks/use-locale";
 import { formatQty, formatDateTime } from "@/lib/format";
-import { itemLabel } from "@/lib/item-label";
+import { itemLabelParts } from "@/lib/item-label";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,11 @@ export function MovementsTable() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-24" />
                   <TableHead>{t("movementsPage.colItem")}</TableHead>
+                  <TableHead>{t("movementsPage.colCategory")}</TableHead>
+                  <TableHead>{t("movementsPage.colCatalogable")}</TableHead>
+                  <TableHead>{t("movementsPage.colColor")}</TableHead>
                   <TableHead>{t("movementsPage.colType")}</TableHead>
                   <TableHead>{t("movementsPage.colQty")}</TableHead>
                   <TableHead>{t("movementsPage.colDirection")}</TableHead>
@@ -66,14 +70,26 @@ export function MovementsTable() {
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-hadidi-subtle">
+                    <TableCell colSpan={9} className="py-8 text-center text-hadidi-subtle">
                       {t("movementsPage.empty")}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  rows.map((mv) => (
+                  rows.map((mv) => {
+                    const parts = itemLabelParts(mv.inventory_item, t);
+                    return (
                     <TableRow key={mv.id}>
-                      <TableCell className="font-medium text-hadidi-primary">{itemLabel(mv.inventory_item)}</TableCell>
+                      <TableCell className="p-1">
+                        {mv.inventory_item?.image_url ? (
+                          <img src={mv.inventory_item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-black/[0.08] object-cover" />
+                        ) : (
+                          <div className="h-14 w-14 shrink-0 rounded-xl border border-dashed border-black/[0.1] bg-hadidi-muted/30" />
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium text-hadidi-primary">{parts.name}</TableCell>
+                      <TableCell className="text-hadidi-subtle">{parts.category}</TableCell>
+                      <TableCell className="text-hadidi-subtle">{parts.catalogable}</TableCell>
+                      <TableCell className="text-hadidi-subtle">{parts.color}</TableCell>
                       <TableCell className="text-hadidi-subtle">{typeLabel(t, mv.type)}</TableCell>
                       <TableCell className="font-mono text-xs">{formatQty(mv.quantity)}</TableCell>
                       <TableCell className="text-xs text-hadidi-subtle">
@@ -81,7 +97,8 @@ export function MovementsTable() {
                       </TableCell>
                       <TableCell className="text-xs text-hadidi-subtle">{formatDateTime(mv.moved_at, locale)}</TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

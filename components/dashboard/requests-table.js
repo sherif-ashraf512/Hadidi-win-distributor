@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { useLocale } from "@/hooks/use-locale";
 import { formatAmount, formatDateTime } from "@/lib/format";
@@ -31,6 +32,7 @@ function statusBadgeClass(status) {
 
 export function RequestsTable() {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const [page, setPage] = useState(1);
 
   const query = useQuery({
@@ -82,21 +84,22 @@ export function RequestsTable() {
                   <TableHead>{t("requestsPage.colTotal")}</TableHead>
                   <TableHead>{t("requestsPage.colStatus")}</TableHead>
                   <TableHead>{t("requestsPage.colDate")}</TableHead>
+                  <TableHead align="end" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-hadidi-subtle">
+                    <TableCell colSpan={6} className="py-8 text-center text-hadidi-subtle">
                       {t("requestsPage.empty")}
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} className="cursor-pointer" onClick={() => router.push(`/requests/${r.id}`)}>
                       <TableCell className="font-medium text-hadidi-primary">{r.reference_no}</TableCell>
                       <TableCell className="text-hadidi-subtle">{typeLabel(t, r.type)}</TableCell>
-                      <TableCell className="font-mono text-xs">{formatAmount(r.final_total)}</TableCell>
+                      <TableCell className="font-mono text-xs">{formatAmount(r.final_total, locale)}</TableCell>
                       <TableCell>
                         <span className={statusBadgeClass(r.status)}>{statusLabel(t, r.status)}</span>
                         {r.status === "rejected" && r.rejection_reason ? (
@@ -104,6 +107,16 @@ export function RequestsTable() {
                         ) : null}
                       </TableCell>
                       <TableCell className="text-xs text-hadidi-subtle">{formatDateTime(r.created_at, locale)}</TableCell>
+                      <TableCell className="text-end">
+                        <Link
+                          href={`/requests/${r.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-hadidi-accent hover:bg-hadidi-muted/60"
+                        >
+                          <Eye className="size-4" aria-hidden />
+                          {t("common.view")}
+                        </Link>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

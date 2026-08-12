@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useLocale } from "@/hooks/use-locale";
-import { itemLabel } from "@/lib/item-label";
-import { formatAmount } from "@/lib/format";
+import { useUnsavedChangesGuard } from "@/components/providers/navigation-guard-provider";
+import { itemFullLabel, itemLabelParts } from "@/lib/item-label";
+import { formatAmount, formatQty } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -18,7 +19,7 @@ const TYPES = ["purchase", "return"];
 const ITEM_NONE = "__none__";
 
 export function RequestForm() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -50,7 +51,7 @@ export function RequestForm() {
   const itemOptions = useMemo(
     () => [
       { value: ITEM_NONE, label: t("requestsPage.selectItemPlaceholder") },
-      ...pickerRows.map((row) => ({ value: String(row.id), label: itemLabel(row.item) })),
+      ...pickerRows.map((row) => ({ value: String(row.id), label: itemFullLabel(row.item, t) })),
     ],
     [pickerRows, t]
   );
@@ -59,11 +60,12 @@ export function RequestForm() {
     return pickerRows.find((r) => String(r.id) === String(id));
   }
 
-  // Price is never distributor-entered — always the item's fixed selling
-  // price, shown read-only next to the quantity field. Prevents a
-  // distributor from under/over-pricing their own order.
+  // Price is never distributor-entered — always the item's fixed price,
+  // shown read-only next to the quantity field. Prevents a distributor
+  // from under/over-pricing their own order.
   const pickedRow = formItemId !== ITEM_NONE ? rowById(formItemId) : null;
-  const pickedSellingPrice = pickedRow?.item?.selling_price != null ? Number(pickedRow.item.selling_price) : null;
+  const pickedSellingPrice = pickedRow?.item?.price != null ? Number(pickedRow.item.price) : null;
+  const isReturn = type === "return";
 
   function handleAddLine() {
     if (formItemId === ITEM_NONE) return;
@@ -74,6 +76,13 @@ export function RequestForm() {
     const qty = Number(formQty);
     if (!formQty || Number.isNaN(qty) || qty <= 0) {
       setError(t("requestsPage.validationQuantity"));
+      return;
+    }
+    // A return can never ask for more than what's actually sitting in the
+    // distributor's own warehouse — pickedRow.available comes straight from
+    // /distributor/stock for the "return" picker.
+    if (isReturn && pickedRow?.available != null && qty > Number(pickedRow.available)) {
+      setError(t("requestsPage.validationReturnQuantity"));
       return;
     }
     if (pickedSellingPrice == null) {
@@ -124,6 +133,9 @@ export function RequestForm() {
     createMutation.mutate();
   }
 
+  const isDirty = lines.length > 0 || notes.trim() !== "" || (formItemId !== ITEM_NONE && formQty !== "");
+  useUnsavedChangesGuard(!createMutation.isSuccess && isDirty);
+
   const grandTotal = lines.reduce((acc, row) => acc + Number(row.quantity || 0) * Number(row.unit_price || 0), 0);
 
   return (
@@ -169,19 +181,24 @@ export function RequestForm() {
                     options={itemOptions}
                   />
                 </div>
-                <Input
-                  label={t("requestsPage.fieldQuantity")}
-                  inputMode="decimal"
-                  value={formQty}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v === "" || /^\d*\.?\d*$/.test(v)) setFormQty(v);
-                  }}
-                />
+                <div>
+                  <Input
+                    label={t("requestsPage.fieldQuantity")}
+                    inputMode="decimal"
+                    value={formQty}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "" || /^\d*\.?\d*$/.test(v)) setFormQty(v);
+                    }}
+                  />
+                  {isReturn && pickedRow?.available != null ? (
+                    <p className="mt-1 text-xs text-hadidi-subtle">{t("requestsPage.availableHint")}: {formatQty(pickedRow.available)}</p>
+                  ) : null}
+                </div>
                 <div className="flex w-full flex-col gap-1.5 text-sm font-medium text-hadidi-primary">
                   <span>{t("requestsPage.sellingPriceHint")}</span>
                   <div className="flex h-[46px] w-full items-center rounded-2xl border border-black/[0.08] bg-hadidi-muted/40 px-4 text-hadidi-primary">
-                    {pickedSellingPrice != null ? formatAmount(pickedSellingPrice) : t("common.dash")}
+                    {pickedSellingPrice != null ? formatAmount(pickedSellingPrice, locale) : t("common.dash")}
                   </div>
                 </div>
                 <Button
@@ -204,22 +221,37 @@ export function RequestForm() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-24" />
                     <TableHead>{t("requestsPage.fieldItem")}</TableHead>
-                    <TableHead className="w-28">{t("requestsPage.fieldQuantity")}</TableHead>
+                    <TableHead>{t("requestsPage.colCategory")}</TableHead>
+                    <TableHead>{t("requestsPage.colCatalogable")}</TableHead>
+                    <TableHead>{t("requestsPage.colColor")}</TableHead>
+                    <TableHead className="w-24">{t("requestsPage.fieldQuantity")}</TableHead>
                     <TableHead className="w-28">{t("requestsPage.fieldUnitPrice")}</TableHead>
                     <TableHead className="w-28">{t("requestsPage.colTotal")}</TableHead>
                     <TableHead className="w-16" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lines.map((row, idx) => (
+                  {lines.map((row, idx) => {
+                    const item = rowById(row.inventory_item_id)?.item;
+                    const parts = itemLabelParts(item, t);
+                    return (
                     <TableRow key={row.inventory_item_id}>
-                      <TableCell className="font-semibold text-hadidi-primary">
-                        {itemLabel(rowById(row.inventory_item_id)?.item)}
+                      <TableCell className="p-1">
+                        {item?.image_url ? (
+                          <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-black/[0.08] object-cover" />
+                        ) : (
+                          <div className="h-14 w-14 shrink-0 rounded-xl border border-dashed border-black/[0.1] bg-hadidi-muted/30" />
+                        )}
                       </TableCell>
-                      <TableCell>{row.quantity}</TableCell>
-                      <TableCell>{formatAmount(row.unit_price)}</TableCell>
-                      <TableCell className="font-bold">{formatAmount(Number(row.quantity) * Number(row.unit_price))}</TableCell>
+                      <TableCell className="font-semibold text-hadidi-primary">{parts.name}</TableCell>
+                      <TableCell className="text-hadidi-subtle">{parts.category}</TableCell>
+                      <TableCell className="text-hadidi-subtle">{parts.catalogable}</TableCell>
+                      <TableCell className="text-hadidi-subtle">{parts.color}</TableCell>
+                      <TableCell className="font-mono text-xs">{formatQty(row.quantity)}</TableCell>
+                      <TableCell>{formatAmount(row.unit_price, locale)}</TableCell>
+                      <TableCell className="font-bold">{formatAmount(Number(row.quantity) * Number(row.unit_price), locale)}</TableCell>
                       <TableCell>
                         <button
                           type="button"
@@ -230,12 +262,13 @@ export function RequestForm() {
                         </button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   <TableRow className="bg-hadidi-muted/20 hover:bg-hadidi-muted/20">
-                    <TableCell colSpan={3} className="text-end font-bold text-hadidi-primary">
+                    <TableCell colSpan={7} className="text-end font-bold text-hadidi-primary">
                       {t("requestsPage.colTotal")}
                     </TableCell>
-                    <TableCell className="text-lg font-bold text-hadidi-primary">{formatAmount(grandTotal)}</TableCell>
+                    <TableCell className="text-lg font-bold text-hadidi-primary">{formatAmount(grandTotal, locale)}</TableCell>
                     <TableCell />
                   </TableRow>
                 </TableBody>
