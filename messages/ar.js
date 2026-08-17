@@ -149,7 +149,6 @@ export const ar = {
     colCategory: "الفئة",
     colCatalogable: "نوع القطاع",
     colColor: "اللون",
-    availableHint: "المتاح لديك",
   },
   requestDetailPage: {
     title: "تفاصيل الطلب",

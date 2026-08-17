@@ -149,7 +149,6 @@ export const en = {
     colCategory: "Category",
     colCatalogable: "Section Type",
     colColor: "Color",
-    availableHint: "You have",
   },
   requestDetailPage: {
     title: "Request Details",

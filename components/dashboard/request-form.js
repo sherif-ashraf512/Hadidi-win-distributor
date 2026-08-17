@@ -44,7 +44,7 @@ export function RequestForm() {
       }
       const { data } = await api.get("/distributor/catalog-items");
       const rows = Array.isArray(data?.data?.items) ? data.data.items : [];
-      return rows.map((it) => ({ id: it.id, item: it, available: null }));
+      return rows.map((it) => ({ id: it.id, item: it, available: it.retail_available_quantity ?? null }));
     },
   });
 
@@ -193,20 +193,19 @@ export function RequestForm() {
                     options={itemOptions}
                   />
                 </div>
-                <div>
-                  <Input
-                    label={t("requestsPage.fieldQuantity")}
-                    inputMode="decimal"
-                    value={formQty}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === "" || /^\d*\.?\d*$/.test(v)) setFormQty(v);
-                    }}
-                  />
-                  {isReturn && pickedRow?.available != null ? (
-                    <p className="mt-1 text-xs text-hadidi-subtle">{t("requestsPage.availableHint")}: {formatQty(pickedRow.available)}</p>
-                  ) : null}
-                </div>
+                <Input
+                  label={
+                    pickedRow?.available != null
+                      ? `${t("requestsPage.fieldQuantity")} (${formatQty(pickedRow.available)})`
+                      : t("requestsPage.fieldQuantity")
+                  }
+                  inputMode="decimal"
+                  value={formQty}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "" || /^\d*\.?\d*$/.test(v)) setFormQty(v);
+                  }}
+                />
                 <div className="flex w-full flex-col gap-1.5 text-sm font-medium text-hadidi-primary">
                   <span>{t("requestsPage.sellingPriceHint")}</span>
                   <div className="flex h-[46px] w-full items-center rounded-2xl border border-black/[0.08] bg-hadidi-muted/40 px-4 text-hadidi-primary">
